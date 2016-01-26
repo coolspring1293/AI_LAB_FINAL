@@ -48,19 +48,17 @@ import android.provider.Settings;
 
 
 public class MainActivity extends Activity implements SensorEventListener {
-
-	
-	
-	
+    //收集信息
 	private double x, y, z, locTime, locLongitude, locLatitude, locAltitude;
+	
 	private List<Sensor> sensors;
 	private TextView gx, gy, gz, llo, lla;
 	private Button start_bt, end_bt;
 	private EditText etLabel, etInterval;
 	private String filePath = "/sdcard/AI_Test/";
-	private String fileName = "log.csv";
+	private String fileName = "Not Write to SD card!.txt";
 	private final Timer timer = new Timer();  
-	private ProgressDialog dialog;
+	
 	
 	private Handler recordHandler;
 	private TimerTask task;  
@@ -208,7 +206,7 @@ public class MainActivity extends Activity implements SensorEventListener {
 				int hour = t.hour;
 				int min = t.minute;
 				int sec = t.second;
-				fileName = year + "_" + day + "_"+ hour + "_"+ min + "_"+ + sec + "sensor_record.csv";
+				fileName = year + "_" + day + "_"+ hour + "_"+ min + "_" + sec + "sensor_record.csv";
 				label = etLabel.getText().toString();
 			}
 			
@@ -220,6 +218,8 @@ public class MainActivity extends Activity implements SensorEventListener {
 				timer.cancel();  
 				Toast.makeText(getApplicationContext(), "写文件到" + filePath + fileName, Toast.LENGTH_SHORT).show();
 				Toast.makeText(getApplicationContext(), "收集结束", Toast.LENGTH_SHORT).show();
+				start_bt.setText("Exit");
+				start_bt.setEnabled(false);
 			}
 		});
 		
