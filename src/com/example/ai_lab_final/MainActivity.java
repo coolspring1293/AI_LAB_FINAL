@@ -4,18 +4,26 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
+
+
 import android.support.v7.app.ActionBarActivity;
 import android.support.v7.app.ActionBar;
 import android.support.v4.app.Fragment;
 import android.text.format.Time;
+import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.app.AlertDialog.Builder;
 import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -29,6 +37,8 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.location.LocationProvider;
+import android.net.wifi.WifiInfo;
+import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -45,29 +55,31 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.os.Build;
 import android.provider.Settings;
-
+import android.net.wifi.WifiInfo;
+import android.net.wifi.WifiManager;
 
 public class MainActivity extends Activity implements SensorEventListener {
     //收集信息
-	private double x, y, z, locTime, locLongitude, locLatitude, locAltitude;
-	
+	private double x, y, z, mfx, mfy, mfz, ox, oy, oz, pxt, lt;
+	private int speed;
 	private List<Sensor> sensors;
-	private TextView gx, gy, gz, llo, lla;
-	private Button start_bt, end_bt;
+	private TextView gx, gy, gz, llo, lla, wf, spd;
+	private Button start_bt, end_bt, hd_bt;
 	private EditText etLabel, etInterval;
 	private String filePath = "/sdcard/AI_Test/";
-	private String fileName = "Not Write to SD card!.txt";
+	private String fileName = "Not Write to SD card!";
+	public static String FORMAT_FULL = "yyyy_MM_dd_HH_mm_ss_S";
+
 	private final Timer timer = new Timer();  
-	
+	private String ssid;
 	
 	private Handler recordHandler;
 	private TimerTask task;  
 	
 	private Sensor sensor;
-	private LocationListener locationListener;
-	private LocationManager lm;
+
 	
-	private String label;
+	private String label, ipText;
 	
 	private GpsStatus.Listener listener;
 	
@@ -83,6 +95,9 @@ public class MainActivity extends Activity implements SensorEventListener {
 		llo = (TextView) findViewById(R.id.tv_loc_lon);
 		lla = (TextView) findViewById(R.id.tv_loc_la);
 		
+		wf = (TextView) findViewById(R.id.tv_wifi);
+		spd  = (TextView) findViewById(R.id.tv_spd);
+		
 		etLabel = (EditText) findViewById(R.id.et_label);
 		etInterval = (EditText) findViewById(R.id.et_interval);
 		
@@ -90,78 +105,8 @@ public class MainActivity extends Activity implements SensorEventListener {
 		
 		start_bt = (Button)findViewById(R.id.bt_start);
 		end_bt = (Button)findViewById(R.id.bt_end);
-		/*
-		//为获取地理位置信息时设置查询条件
-        String bestProvider = lm.getBestProvider(getCriteria(), true);
-        //获取位置信息
-        //如果不设置查询要求，getLastKnownLocation方法传人的参数为LocationManager.GPS_PROVIDER
-        Location location= lm.getLastKnownLocation(bestProvider);    
-        updateLocation(location);
-        //监听状态
-        lm.addGpsStatusListener(listener);
-        
-        lm.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000, 1, locationListener);
-		
-		
-		if(!lm.isProviderEnabled(LocationManager.GPS_PROVIDER)){
-            Toast.makeText(this, "请开启GPS导航...", Toast.LENGTH_SHORT).show();
-            //返回开启GPS导航设置界面
-            Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);   
-            startActivityForResult(intent,0); 
-            return;
-        }
-        
-        locationListener = new LocationListener() {
-	        
-	        /**
-	         * 位置信息变化时触发
-	         *
-			@Override
-			public void onLocationChanged(Location location) {
-				// TODO Auto-generated method stub
-				updateLocation(location);
-				
-			}
-			@Override
-			public void onProviderDisabled(String arg0) {
-				// TODO Auto-generated method stub
-				updateLocation(null);
-			}
+		hd_bt = (Button)findViewById(R.id.hiden);
 
-			@Override
-			public void onProviderEnabled(String provider) {
-	            Location location = lm.getLastKnownLocation(provider);
-	            updateLocation(location);
-	        }
-	    
-
-			@Override
-			public void onStatusChanged(String provider, int status, Bundle extras) {
-	            switch (status) {
-	            //GPS状态为可见时
-	            case LocationProvider.AVAILABLE:
-	            	Toast.makeText(getApplicationContext(), "当前GPS状态为可见状态", Toast.LENGTH_SHORT).show();
-
-	                break;
-	            //GPS状态为服务区外时
-	            case LocationProvider.OUT_OF_SERVICE:
-	            	Toast.makeText(getApplicationContext(), "当前GPS状态为服务区外状态", Toast.LENGTH_SHORT).show();
-	                break;
-	            //GPS状态为暂停服务时
-	            case LocationProvider.TEMPORARILY_UNAVAILABLE:
-	            	Toast.makeText(getApplicationContext(), "当前GPS状态为暂停服务状态", Toast.LENGTH_SHORT).show();
-	            	break;
-	            }
-	        }
-	};
-	
-		listener = new GpsStatus.Listener() {
-	        public void onGpsStatusChanged(int event) {
-	            
-
-	        };
-	    };
-		*/
 		final Handler handler = new Handler() {
 		    @Override
 		    public void handleMessage(Message msg) {
@@ -170,8 +115,12 @@ public class MainActivity extends Activity implements SensorEventListener {
 					if (label == null) label = "NULL";
 					Time t = new Time();
 					t.setToNow();
-					String curTime = t.toString();
-					String singleSensorRecord = x + "," + y + "," + z + "," + locTime + "," + locTime + "," + locLatitude + ","+ locAltitude +","+ label + "," + curTime;  
+					String singleSensorRecord = 
+							x   + "," +  y  + "," +  z   + "," + 
+							mfx + "," + mfy + "," + mfz  + "," + 
+							ox  + "," + oy  + "," + oz   + "," + 
+							pxt + "," + lt + "," + getWifiInfo() + "," +
+							label + "," + getTimeString(); 
 					writeTxtToFile(singleSensorRecord, filePath, fileName);			
 		    	}		    	
 		        super.handleMessage(msg);
@@ -188,26 +137,18 @@ public class MainActivity extends Activity implements SensorEventListener {
 		    }
 		}; 
 		
-		
-		
-		        
+		end_bt.setEnabled(false);
+		       
 		start_bt.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View arg0) {
 				int interval = Integer.parseInt(etInterval.getText().toString());
-				
-				
+				start_bt.setEnabled(false);
+				end_bt.setEnabled(true);
 				timer.schedule(task, 1000, interval);   
 				Toast.makeText(getApplicationContext(), "START:1000毫秒后开始收集", Toast.LENGTH_SHORT).show();
-				Time t = new Time();
-				t.setToNow();
-				int year = t.year;
-				int day = t.yearDay;
-				int hour = t.hour;
-				int min = t.minute;
-				int sec = t.second;
-				fileName = year + "_" + day + "_"+ hour + "_"+ min + "_" + sec + "sensor_record.csv";
-				label = etLabel.getText().toString();
+				fileName = getTimeString() + "sensor_record.csv";
+				label = etLabel.getText().toString();			
 			}
 			
 		});
@@ -223,30 +164,70 @@ public class MainActivity extends Activity implements SensorEventListener {
 			}
 		});
 		
+		
+		hd_bt.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View arg0) {
+				new AlertDialog.Builder(MainActivity.this) 
+				.setTitle("人工智能实验组员信息")
+				.setMessage("2013级计算机科学与技术\n刘思远\t13349073\n刘旺\t13349074\n谢智晖\t13349134\n左谭励\t????????\n郑晓钿\t????????")
+				.setPositiveButton("返回", null)
+				.show();
+				//Toast.makeText(getApplicationCtext(), "I LOVE YOU", Toast.LENGTH_SHORT).show();
+			}
+		});
+		
+		
 	}
 	
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		// Handle action bar item clicks here. The action bar will
+		// automatically handle clicks on the Home/Up button, so long
+		// as you specify a parent activity in AndroidManifest.xml.
+		int id = item.getItemId();
+		if (id == R.id.action_settings) {
+			new AlertDialog.Builder(MainActivity.this) 
+			.setTitle("About")
+			.setMessage("AI_Lab_Final_Assignment_V1.0\nCreated by Liu Wang on " +
+					"2016 Jan 26.\n Copyright (c) 2016 Liu Wang. All rights reserved.\n" +
+					"Source Code on GitHub: https://github.com/coolspring1293/AI_LAB_FINAL\n" + 
+					"Thanks a lot to Liu Siyuan and Xie Zhihui.")
+			.setPositiveButton("返回", null)
+			.show();
+			return true;
+		}
+		return super.onOptionsItemSelected(item);
+	}
+
+
 	
-	public void updateLocation(Location location) {
-        if(location != null) {
-        	locLongitude = (double)location.getLongitude();
-        	locLatitude = (double)location.getLatitude();
-        	locTime = (double)location.getTime();
-        	locAltitude = (double)location.getAltitude();
-        	
-        	llo.setText("Longitude--" + locLongitude);
-            lla.setText("Latitude--" + locLatitude);
-        } else{
-        	llo.setText("Longitude--" + "Invalid");
-            lla.setText("Latitude--" + "Invalid");
-            
-        }
-    }
-	/*{
-		 
-        
-        
-	}*/
+	private String getWifiInfo(){
+		WifiManager wifi = (WifiManager) getSystemService(Context.WIFI_SERVICE);
+		WifiInfo info = wifi.getConnectionInfo();
+		String maxText = info.getMacAddress();
+		ipText = intToIp(info.getIpAddress());
+		String status = "WIFI_STATE_DISABLED";
+		if (wifi.getWifiState() == WifiManager.WIFI_STATE_ENABLED) {
+			status = "WIFI_STATE_ENABLED";
+		}
+		ssid = info.getSSID();
+		int networkID = info.getNetworkId();
+		speed = info.getLinkSpeed();
+		
+		wf.setText("WiFi:" + ssid);
+		spd.setText("IP:"+ ipText +"\tSpeed:" + speed);
+		
+		return maxText + ","+ ipText + "," + status + ","+ ssid + "," + networkID + "," + speed;
+		}
+	private String intToIp(int ip) {
+		return  (ip & 0xFF) + "." + 
+				((ip >> 8) & 0xFF) + "." + 
+				((ip >> 16) & 0xFF) + "." + 
+				((ip >> 24) & 0xFF);
+	}
 	
+
 	public void writeFileSdcardFile(String fileName,String write_str) throws IOException{ 
 		 try{ 
 		       FileOutputStream fout = new FileOutputStream(fileName); 
@@ -265,9 +246,10 @@ public class MainActivity extends Activity implements SensorEventListener {
 		super.onResume();
 		SensorManager manager = (SensorManager) this
 				.getSystemService(Context.SENSOR_SERVICE);
-		sensors = manager.getSensorList(Sensor.TYPE_ACCELEROMETER);
+		sensors = manager.getSensorList(Sensor.TYPE_ALL);
 		sensor = sensors.get(0);
-		manager.registerListener(this, sensor, SensorManager.SENSOR_DELAY_GAME);
+		manager.registerListener(this, sensor, SensorManager.SENSOR_DELAY_NORMAL);
+		
 	}
 	
 	@Override
@@ -279,13 +261,41 @@ public class MainActivity extends Activity implements SensorEventListener {
 	@Override
 	public void onSensorChanged(SensorEvent event) {
 		// TODO Auto-generated method stub
-		x = event.values[0];
-		y = event.values[1];
-		z = event.values[2];
+		for (Sensor s : sensors) {
+			switch (s.getType()) {
+			case Sensor.TYPE_ACCELEROMETER:
+				x = event.values[0];
+				y = event.values[1];
+				z = event.values[2];
+				break;
+			case Sensor.TYPE_MAGNETIC_FIELD:
+				mfx = event.values[0];
+				mfy = event.values[1];
+				mfz = event.values[2];
+				break;
+			case Sensor.TYPE_ORIENTATION:
+				ox = event.values[0];
+				oy = event.values[1];
+				oz = event.values[2];
+				break;
+			case Sensor.TYPE_PROXIMITY:
+				pxt = event.values[0];
+				break;
+				
+			case Sensor.TYPE_LIGHT:
+				lt = event.values[0];
+				break;
+			}
+			getWifiInfo();
+		}
 		
 		gx.setText("X-axis-----------:" + x);
 		gy.setText("Y-axis-----------:" + y);
 		gz.setText("Z-axis-----------:" + z);
+		lla.setText("Proximity--------:"+ pxt);
+		llo.setText("Light------------:"+ lt);
+		
+		
 	}
 
 	@Override
@@ -347,21 +357,12 @@ public class MainActivity extends Activity implements SensorEventListener {
 	    }
 	}
 
-	private Criteria getCriteria(){
-        Criteria criteria=new Criteria();
-        //设置定位精确度 Criteria.ACCURACY_COARSE比较粗略，Criteria.ACCURACY_FINE则比较精细 
-        criteria.setAccuracy(Criteria.ACCURACY_FINE);    
-        //设置是否要求速度
-        criteria.setSpeedRequired(false);
-        // 设置是否允许运营商收费  
-        criteria.setCostAllowed(false);
-        //设置是否需要方位信息
-        criteria.setBearingRequired(false);
-        //设置是否需要海拔信息
-        criteria.setAltitudeRequired(false);
-        // 设置对电源的需求  
-        criteria.setPowerRequirement(Criteria.POWER_LOW);
-        return criteria;
-    }
+	@SuppressLint("SimpleDateFormat")
+	public static String getTimeString() {
+	    SimpleDateFormat df = new SimpleDateFormat(FORMAT_FULL);
+	    Calendar calendar = Calendar.getInstance();
+	    return df.format(calendar.getTime());
+	}
+
 
 }
