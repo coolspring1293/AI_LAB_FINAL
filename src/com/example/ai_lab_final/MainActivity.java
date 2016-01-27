@@ -4,14 +4,13 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
-
-
 
 import android.support.v7.app.ActionBarActivity;
 import android.support.v7.app.ActionBar;
@@ -60,10 +59,11 @@ import android.net.wifi.WifiManager;
 
 public class MainActivity extends Activity implements SensorEventListener {
     //收集信息
-	private double x, y, z, mfx, mfy, mfz, ox, oy, oz, pxt, lt;
+	private double x, y, z, mfx, mfy, mfz, ox, oy, oz, lt, tp, r, p;
+	private String pxt;
 	private int speed;
 	private List<Sensor> sensors;
-	private TextView gx, gy, gz, llo, lla, wf, spd;
+	private TextView gx, gy, gz, llo, lla, wf, spd, temp, rh, pre;
 	private Button start_bt, end_bt, hd_bt;
 	private EditText etLabel, etInterval;
 	private String filePath = "/sdcard/AI_Test/";
@@ -82,6 +82,7 @@ public class MainActivity extends Activity implements SensorEventListener {
 	private String label, ipText;
 	
 	private GpsStatus.Listener listener;
+	private DecimalFormat df = new DecimalFormat("#.000");
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -98,10 +99,14 @@ public class MainActivity extends Activity implements SensorEventListener {
 		wf = (TextView) findViewById(R.id.tv_wifi);
 		spd  = (TextView) findViewById(R.id.tv_spd);
 		
+		temp = (TextView) findViewById(R.id.temp);
+		rh = (TextView) findViewById(R.id.rh);
+		pre = (TextView) findViewById(R.id.pre);
+		
 		etLabel = (EditText) findViewById(R.id.et_label);
 		etInterval = (EditText) findViewById(R.id.et_interval);
 		
-
+		
 		
 		start_bt = (Button)findViewById(R.id.bt_start);
 		end_bt = (Button)findViewById(R.id.bt_end);
@@ -113,13 +118,14 @@ public class MainActivity extends Activity implements SensorEventListener {
 		        // TODO Auto-generated method stub
 		    	if (msg.what == 1) {		    		
 					if (label == null) label = "NULL";
-					Time t = new Time();
-					t.setToNow();
+					Time tm = new Time();
+					tm.setToNow();
 					String singleSensorRecord = 
 							x   + "," +  y  + "," +  z   + "," + 
 							mfx + "," + mfy + "," + mfz  + "," + 
 							ox  + "," + oy  + "," + oz   + "," + 
-							pxt + "," + lt + "," + getWifiInfo() + "," +
+							pxt + "," + lt  + "," + getWifiInfo() + "," +
+							tp  + "," + r   + "," + p    + "," + 
 							label + "," + getTimeString(); 
 					writeTxtToFile(singleSensorRecord, filePath, fileName);			
 		    	}		    	
@@ -170,7 +176,7 @@ public class MainActivity extends Activity implements SensorEventListener {
 			public void onClick(View arg0) {
 				new AlertDialog.Builder(MainActivity.this) 
 				.setTitle("人工智能实验组员信息")
-				.setMessage("2013级计算机科学与技术\n刘思远\t13349073\n刘旺\t13349074\n谢智晖\t13349134\n左谭励\t????????\n郑晓钿\t????????")
+				.setMessage("2013级计算机科学与技术\n刘思远\t13349073\n刘旺\t13349074\n谢智晖\t13349134\n左谭励\t13349174\n郑晓钿\t13349163")
 				.setPositiveButton("返回", null)
 				.show();
 				//Toast.makeText(getApplicationCtext(), "I LOVE YOU", Toast.LENGTH_SHORT).show();
@@ -178,6 +184,93 @@ public class MainActivity extends Activity implements SensorEventListener {
 		});
 		
 		
+	}
+	
+	
+
+
+	
+	private String getWifiInfo(){
+		WifiManager wifi = (WifiManager) getSystemService(Context.WIFI_SERVICE);
+		WifiInfo info = wifi.getConnectionInfo();
+		String maxText = info.getMacAddress();
+		ipText = intToIp(info.getIpAddress());
+		
+		ssid = info.getSSID();
+		int networkID = info.getNetworkId();
+		speed = info.getLinkSpeed();
+		
+		wf.setText("WiFi:" + ssid);
+		spd.setText("IP:"+ ipText +"\tSpeed:" + speed);
+		
+		return  ipText + ","+ ssid + "," + networkID + "," + speed;
+	}
+	private String intToIp(int ip) {
+		return  (ip & 0xFF) + "." + 
+				((ip >> 8) & 0xFF) + "." + 
+				((ip >> 16) & 0xFF) + "." + 
+				((ip >> 24) & 0xFF);
+	}
+	
+
+	public void writeFileSdcardFile(String fileName,String write_str) throws IOException{ 
+		 try{ 
+		       FileOutputStream fout = new FileOutputStream(fileName); 
+		       byte [] bytes = write_str.getBytes(); 
+
+		       fout.write(bytes); 
+		       fout.close(); 
+		     }
+		      catch(Exception e){ 
+		        e.printStackTrace(); 
+		       } 
+		   } 
+	
+	@SuppressLint("InlinedApi")
+	@SuppressWarnings("deprecation")
+	@Override
+	protected void onResume() {
+		super.onResume();
+		SensorManager manager = (SensorManager) this
+				.getSystemService(Context.SENSOR_SERVICE);
+		
+		sensors = manager.getSensorList(Sensor.TYPE_ACCELEROMETER);
+		sensor = sensors.get(0);		
+		manager.registerListener(this, sensor, SensorManager.SENSOR_DELAY_GAME);
+		
+		sensors = manager.getSensorList(Sensor.TYPE_MAGNETIC_FIELD);
+		sensor = sensors.get(0);
+		manager.registerListener(this, sensor, SensorManager.SENSOR_DELAY_GAME);
+		
+		sensors = manager.getSensorList(Sensor.TYPE_ORIENTATION);
+		sensor = sensors.get(0);
+		manager.registerListener(this, sensor, SensorManager.SENSOR_DELAY_GAME);
+		
+		sensors = manager.getSensorList(Sensor.TYPE_PROXIMITY);
+		sensor = sensors.get(0);
+		manager.registerListener(this, sensor, SensorManager.SENSOR_DELAY_GAME);
+		
+		sensors = manager.getSensorList(Sensor.TYPE_LIGHT);
+		sensor = sensors.get(0);
+		manager.registerListener(this, sensor, SensorManager.SENSOR_DELAY_GAME);
+		
+		sensors = manager.getSensorList(Sensor.TYPE_AMBIENT_TEMPERATURE);
+		sensor = sensors.get(0);
+		manager.registerListener(this, sensor, SensorManager.SENSOR_DELAY_GAME);
+		
+		sensors = manager.getSensorList(Sensor.TYPE_RELATIVE_HUMIDITY);
+		sensor = sensors.get(0);
+		manager.registerListener(this, sensor, SensorManager.SENSOR_DELAY_GAME);
+		
+		sensors = manager.getSensorList(Sensor.TYPE_PRESSURE);
+		sensor = sensors.get(0);
+		manager.registerListener(this, sensor, SensorManager.SENSOR_DELAY_GAME);
+	}
+	
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		getMenuInflater().inflate(R.menu.main, menu);
+		return true;
 	}
 	
 	@Override
@@ -200,100 +293,66 @@ public class MainActivity extends Activity implements SensorEventListener {
 		return super.onOptionsItemSelected(item);
 	}
 
-
 	
-	private String getWifiInfo(){
-		WifiManager wifi = (WifiManager) getSystemService(Context.WIFI_SERVICE);
-		WifiInfo info = wifi.getConnectionInfo();
-		String maxText = info.getMacAddress();
-		ipText = intToIp(info.getIpAddress());
-		String status = "WIFI_STATE_DISABLED";
-		if (wifi.getWifiState() == WifiManager.WIFI_STATE_ENABLED) {
-			status = "WIFI_STATE_ENABLED";
-		}
-		ssid = info.getSSID();
-		int networkID = info.getNetworkId();
-		speed = info.getLinkSpeed();
-		
-		wf.setText("WiFi:" + ssid);
-		spd.setText("IP:"+ ipText +"\tSpeed:" + speed);
-		
-		return maxText + ","+ ipText + "," + status + ","+ ssid + "," + networkID + "," + speed;
-		}
-	private String intToIp(int ip) {
-		return  (ip & 0xFF) + "." + 
-				((ip >> 8) & 0xFF) + "." + 
-				((ip >> 16) & 0xFF) + "." + 
-				((ip >> 24) & 0xFF);
-	}
-	
-
-	public void writeFileSdcardFile(String fileName,String write_str) throws IOException{ 
-		 try{ 
-		       FileOutputStream fout = new FileOutputStream(fileName); 
-		       byte [] bytes = write_str.getBytes(); 
-
-		       fout.write(bytes); 
-		       fout.close(); 
-		     }
-		      catch(Exception e){ 
-		        e.printStackTrace(); 
-		       } 
-		   } 
-	
-	@Override
-	protected void onResume() {
-		super.onResume();
-		SensorManager manager = (SensorManager) this
-				.getSystemService(Context.SENSOR_SERVICE);
-		sensors = manager.getSensorList(Sensor.TYPE_ALL);
-		sensor = sensors.get(0);
-		manager.registerListener(this, sensor, SensorManager.SENSOR_DELAY_NORMAL);
-		
-	}
-	
-	@Override
-	public boolean onCreateOptionsMenu(Menu menu) {
-		getMenuInflater().inflate(R.menu.main, menu);
-		return true;
-	}
-	
+	@SuppressWarnings("deprecation")
 	@Override
 	public void onSensorChanged(SensorEvent event) {
 		// TODO Auto-generated method stub
-		for (Sensor s : sensors) {
-			switch (s.getType()) {
+		//Sensor s = event.sensor;
+			//Log.d("Sensor", event.sensor.toString());
+			switch (event.sensor.getType()) {
+			
 			case Sensor.TYPE_ACCELEROMETER:
 				x = event.values[0];
 				y = event.values[1];
 				z = event.values[2];
+				
 				break;
+			
 			case Sensor.TYPE_MAGNETIC_FIELD:
 				mfx = event.values[0];
 				mfy = event.values[1];
 				mfz = event.values[2];
 				break;
+		
+			
 			case Sensor.TYPE_ORIENTATION:
 				ox = event.values[0];
 				oy = event.values[1];
 				oz = event.values[2];
 				break;
 			case Sensor.TYPE_PROXIMITY:
-				pxt = event.values[0];
+				pxt = (event.values[0] == 0 ? "Near" : "Far");
 				break;
 				
 			case Sensor.TYPE_LIGHT:
 				lt = event.values[0];
 				break;
+			case Sensor.TYPE_AMBIENT_TEMPERATURE:
+				tp = event.values[0];
+				break;
+			case Sensor.TYPE_RELATIVE_HUMIDITY:
+				r = event.values[0];
+				break;
+			case Sensor.TYPE_PRESSURE:
+				p = event.values[0];
+				break;
+				
 			}
-			getWifiInfo();
-		}
+		getWifiInfo();
 		
-		gx.setText("X-axis-----------:" + x);
-		gy.setText("Y-axis-----------:" + y);
-		gz.setText("Z-axis-----------:" + z);
-		lla.setText("Proximity--------:"+ pxt);
-		llo.setText("Light------------:"+ lt);
+		
+		gx.setText( "X-axis------------:" + x);
+		gy.setText( "Y-axis------------:" + y);
+		gz.setText( "Z-axis------------:" + z);
+		lla.setText("Proximity---------:"+ pxt);
+		llo.setText("Light-------------:"+ lt + "lx");
+		
+		
+		
+		temp.setText("Temperature------:"+ df.format(tp) + "°C");
+		rh.setText(  "Relative Humidity:"+ df.format(r) + "%");
+		pre.setText( "Atmosphere-------:"+ df.format(p) + "hPa");
 		
 		
 	}

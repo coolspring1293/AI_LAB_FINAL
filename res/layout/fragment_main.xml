@@ -50,56 +50,6 @@
         android:layout_alignParentBottom="true"
         android:text="Start" />
 
-    <Button
-        android:id="@+id/bt_end"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignBaseline="@+id/bt_start"
-        android:layout_alignBottom="@+id/bt_start"
-        android:layout_centerHorizontal="true"
-        android:text="End" />
-
-    <EditText
-        android:id="@+id/et_label"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_above="@+id/bt_end"
-        android:layout_alignRight="@+id/bt_end"
-        android:layout_marginBottom="14dp"
-        android:ems="10" >
-
-        <requestFocus />
-    </EditText>
-
-    <TextView
-        android:id="@+id/tv_label"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_above="@+id/et_label"
-        android:layout_alignLeft="@+id/et_label"
-        android:text="Label:"
-        android:textAppearance="?android:attr/textAppearanceSmall" />
-
-    <EditText
-        android:id="@+id/et_interval"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_above="@+id/tv_label"
-        android:layout_alignParentRight="true"
-        android:ems="10"
-        android:inputType="numberDecimal"
-        android:text="100"
-        android:width="150dp" />
-
-    <TextView
-        android:id="@+id/textView1"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_above="@+id/et_interval"
-        android:layout_alignRight="@+id/et_interval"
-        android:text="Collection interval(ms)"
-        android:textAppearance="?android:attr/textAppearanceSmall" />
-
     <TextView
         android:id="@+id/tv_loc"
         android:layout_width="wrap_content"
@@ -107,7 +57,7 @@
         android:layout_alignLeft="@+id/tv_gz"
         android:layout_below="@+id/tv_gz"
         android:layout_marginTop="15dp"
-        android:text="·Information" />
+        android:text="·Ambient Information" />
     
     
     <TextView
@@ -146,24 +96,99 @@
         android:layout_marginTop="15dp"
         android:text="SPEED" />
 
+    <TextView
+        android:id="@+id/temp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/tv_spd"
+        android:layout_below="@+id/tv_spd"
+        android:layout_marginTop="15dp"
+        android:text="Temp" />
+
+    <EditText
+        android:id="@+id/et_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/bt_start"
+        android:layout_alignLeft="@+id/bt_start"
+        android:ems="10"
+        android:width="150dp" >
+
+        <requestFocus />
+    </EditText>
+
+    <EditText
+        android:id="@+id/et_interval"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBaseline="@+id/et_label"
+        android:layout_alignBottom="@+id/et_label"
+        android:layout_alignParentRight="true"
+        android:ems="10"
+        android:inputType="numberDecimal"
+        android:text="100"
+        android:width="150dp" />
+
+    <Button
+        android:id="@+id/bt_end"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBaseline="@+id/bt_start"
+        android:layout_alignBottom="@+id/bt_start"
+        android:layout_toLeftOf="@+id/hiden"
+        android:text="End" />
+
+    <Button
+        android:id="@+id/hiden"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/temp"
+        android:layout_alignRight="@+id/et_interval"
+        android:layout_below="@+id/tv_gx"
+        android:background="#00000000" />
+
     <DigitalClock
         android:id="@+id/digitalClock1"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignBaseline="@+id/tv_g"
         android:layout_alignBottom="@+id/tv_g"
-        android:layout_alignRight="@+id/textView1"
+        android:layout_alignRight="@+id/hiden"
         android:text="DigitalClock" />
 
-    <Button
-        android:id="@+id/hiden"
+    <TextView
+        android:id="@+id/rh"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_above="@+id/tv_wifi"
-        android:layout_alignRight="@+id/digitalClock1"
-        android:layout_alignTop="@+id/tv_gx"
-        android:layout_toRightOf="@+id/et_label"
-        android:background="#00000000"
-        android:text="" />
+        android:layout_alignLeft="@+id/temp"
+        android:layout_below="@+id/temp"
+        android:layout_marginTop="15dp"
+        android:text="RH------0" />
+    <TextView
+        android:id="@+id/pre"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/rh"
+        android:layout_below="@+id/rh"
+        android:layout_marginTop="15dp"
+        android:text="Pre------0" />
+
+    <TextView
+        android:id="@+id/tv_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/et_label"
+        android:layout_alignLeft="@+id/pre"
+        android:text="Label:"
+        android:textAppearance="?android:attr/textAppearanceSmall" />
+
+    <TextView
+        android:id="@+id/textView1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/tv_label"
+        android:layout_alignLeft="@+id/et_interval"
+        android:text="Interval(ms)"
+        android:textAppearance="?android:attr/textAppearanceSmall" />
 
 </RelativeLayout>
