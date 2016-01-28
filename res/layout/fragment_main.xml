@@ -48,6 +48,7 @@
         android:layout_height="wrap_content"
         android:layout_alignLeft="@+id/tv_gz"
         android:layout_alignParentBottom="true"
+        android:layout_alignRight="@+id/et_interval"
         android:text="Start" />
 
     <TextView
@@ -103,7 +104,7 @@
         android:layout_alignLeft="@+id/tv_spd"
         android:layout_below="@+id/tv_spd"
         android:layout_marginTop="15dp"
-        android:text="Temp" />
+        android:text="Temperature" />
 
     <EditText
         android:id="@+id/et_label"
@@ -112,6 +113,7 @@
         android:layout_above="@+id/bt_start"
         android:layout_alignLeft="@+id/bt_start"
         android:ems="10"
+        
         android:width="150dp" >
 
         <requestFocus />
@@ -128,15 +130,6 @@
         android:inputType="numberDecimal"
         android:text="100"
         android:width="150dp" />
-
-    <Button
-        android:id="@+id/bt_end"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignBaseline="@+id/bt_start"
-        android:layout_alignBottom="@+id/bt_start"
-        android:layout_toLeftOf="@+id/hiden"
-        android:text="End" />
 
     <Button
         android:id="@+id/hiden"
@@ -163,7 +156,7 @@
         android:layout_alignLeft="@+id/temp"
         android:layout_below="@+id/temp"
         android:layout_marginTop="15dp"
-        android:text="RH------0" />
+        android:text="Relative humidity" />
     <TextView
         android:id="@+id/pre"
         android:layout_width="wrap_content"
@@ -171,7 +164,7 @@
         android:layout_alignLeft="@+id/rh"
         android:layout_below="@+id/rh"
         android:layout_marginTop="15dp"
-        android:text="Pre------0" />
+        android:text="Atmospheric pressure" />
 
     <TextView
         android:id="@+id/tv_label"

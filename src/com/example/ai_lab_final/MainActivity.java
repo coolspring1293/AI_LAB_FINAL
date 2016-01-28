@@ -42,6 +42,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -64,13 +65,13 @@ public class MainActivity extends Activity implements SensorEventListener {
 	private int speed;
 	private List<Sensor> sensors;
 	private TextView gx, gy, gz, llo, lla, wf, spd, temp, rh, pre;
-	private Button start_bt, end_bt, hd_bt;
+	private Button start_bt, /*end_bt, */hd_bt;
 	private EditText etLabel, etInterval;
 	private String filePath = "/sdcard/AI_Test/";
 	private String fileName = "Not Write to SD card!";
 	public static String FORMAT_FULL = "yyyy_MM_dd_HH_mm_ss_S";
 
-	private final Timer timer = new Timer();  
+	private Timer timer = new Timer();  
 	private String ssid;
 	
 	private Handler recordHandler;
@@ -83,6 +84,10 @@ public class MainActivity extends Activity implements SensorEventListener {
 	
 	private GpsStatus.Listener listener;
 	private DecimalFormat df = new DecimalFormat("#.000");
+	
+	private Boolean isStart;
+	
+	private Handler handler;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -109,10 +114,13 @@ public class MainActivity extends Activity implements SensorEventListener {
 		
 		
 		start_bt = (Button)findViewById(R.id.bt_start);
-		end_bt = (Button)findViewById(R.id.bt_end);
+		//end_bt = (Button)findViewById(R.id.bt_end);
 		hd_bt = (Button)findViewById(R.id.hiden);
-
-		final Handler handler = new Handler() {
+		
+		
+		isStart = true;
+		
+		handler = new Handler() {
 		    @Override
 		    public void handleMessage(Message msg) {
 		        // TODO Auto-generated method stub
@@ -125,7 +133,7 @@ public class MainActivity extends Activity implements SensorEventListener {
 							mfx + "," + mfy + "," + mfz  + "," + 
 							ox  + "," + oy  + "," + oz   + "," + 
 							pxt + "," + lt  + "," + getWifiInfo() + "," +
-							tp  + "," + r   + "," + p    + "," + 
+							tp  + "," + r   + "," + p    + "," +  /* ",,," +*/
 							label + "," + getTimeString(); 
 					writeTxtToFile(singleSensorRecord, filePath, fileName);			
 		    	}		    	
@@ -133,43 +141,43 @@ public class MainActivity extends Activity implements SensorEventListener {
 		    }
 		};
 		
-		task = new TimerTask() {
-		    @Override
-		    public void run() {
-		        // TODO Auto-generated method stub
-		        Message message = new Message();
-		        message.what = 1;
-		        handler.sendMessage(message);
-		    }
-		}; 
 		
-		end_bt.setEnabled(false);
+		
+		//end_bt.setEnabled(false);
 		       
 		start_bt.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View arg0) {
-				int interval = Integer.parseInt(etInterval.getText().toString());
-				start_bt.setEnabled(false);
-				end_bt.setEnabled(true);
-				timer.schedule(task, 1000, interval);   
-				Toast.makeText(getApplicationContext(), "START:1000毫秒后开始收集", Toast.LENGTH_SHORT).show();
-				fileName = getTimeString() + "sensor_record.csv";
-				label = etLabel.getText().toString();			
+				if (isStart == true) {
+					int interval = Integer.parseInt(etInterval.getText().toString());
+					start_bt.setText("End");
+					//end_bt.setEnabled(true);
+					timer = new Timer();
+					timer.schedule(task = new TimerTask() {
+					    @Override
+					    public void run() {
+					        // TODO Auto-generated method stub
+					        Message message = new Message();
+					        message.what = 1;
+					        handler.sendMessage(message);
+					    }
+					} , 150, interval);   
+					Toast.makeText(getApplicationContext(), "START:150毫秒后开始收集", Toast.LENGTH_SHORT).show();
+					fileName = getTimeString() + "sensor_record.csv";
+					label = etLabel.getText().toString();	
+				}
+				else {
+					start_bt.setText("Start");
+					timer.cancel();  
+					Toast.makeText(getApplicationContext(), "写文件到" + filePath + fileName, Toast.LENGTH_SHORT).show();
+					Toast.makeText(getApplicationContext(), "收集结束", Toast.LENGTH_SHORT).show();
+				}
+				
+				isStart = !isStart;
+						
 			}
 			
 		});
-		
-		end_bt.setOnClickListener(new OnClickListener() {
-			@Override
-			public void onClick(View arg0) {
-				timer.cancel();  
-				Toast.makeText(getApplicationContext(), "写文件到" + filePath + fileName, Toast.LENGTH_SHORT).show();
-				Toast.makeText(getApplicationContext(), "收集结束", Toast.LENGTH_SHORT).show();
-				start_bt.setText("Exit");
-				start_bt.setEnabled(false);
-			}
-		});
-		
 		
 		hd_bt.setOnClickListener(new OnClickListener() {
 			@Override
@@ -186,6 +194,45 @@ public class MainActivity extends Activity implements SensorEventListener {
 		
 	}
 	
+
+	  @Override
+	  public boolean onKeyDown(int keyCode, KeyEvent event) {
+	        switch (keyCode) {
+	 
+	        case KeyEvent.KEYCODE_VOLUME_DOWN:
+	        case KeyEvent.KEYCODE_VOLUME_UP:
+	        case KeyEvent.KEYCODE_VOLUME_MUTE:
+	        if (isStart == true) {
+					int interval = Integer.parseInt(etInterval.getText().toString());
+					start_bt.setText("End");
+					//end_bt.setEnabled(true);
+					timer = new Timer();
+					timer.schedule(task = new TimerTask() {
+					    @Override
+					    public void run() {
+					        // TODO Auto-generated method stub
+					        Message message = new Message();
+					        message.what = 1;
+					        handler.sendMessage(message);
+					    }
+					} , 150, interval);   
+					Toast.makeText(getApplicationContext(), "START:150毫秒后开始收集", Toast.LENGTH_SHORT).show();
+					fileName = getTimeString() + "sensor_record.csv";
+					label = etLabel.getText().toString();	
+				}
+				else {
+					start_bt.setText("Start");
+					timer.cancel();  
+					Toast.makeText(getApplicationContext(), "写文件到" + filePath + fileName, Toast.LENGTH_SHORT).show();
+					Toast.makeText(getApplicationContext(), "收集结束", Toast.LENGTH_SHORT).show();
+				}
+				
+				isStart = !isStart;  	
+	            return true;
+	        }
+	        return super.onKeyDown(keyCode, event);
+	    }
+ 
 	
 
 
@@ -253,6 +300,7 @@ public class MainActivity extends Activity implements SensorEventListener {
 		sensors = manager.getSensorList(Sensor.TYPE_LIGHT);
 		sensor = sensors.get(0);
 		manager.registerListener(this, sensor, SensorManager.SENSOR_DELAY_GAME);
+		
 		
 		sensors = manager.getSensorList(Sensor.TYPE_AMBIENT_TEMPERATURE);
 		sensor = sensors.get(0);
@@ -328,6 +376,7 @@ public class MainActivity extends Activity implements SensorEventListener {
 			case Sensor.TYPE_LIGHT:
 				lt = event.values[0];
 				break;
+			
 			case Sensor.TYPE_AMBIENT_TEMPERATURE:
 				tp = event.values[0];
 				break;
@@ -337,7 +386,7 @@ public class MainActivity extends Activity implements SensorEventListener {
 			case Sensor.TYPE_PRESSURE:
 				p = event.values[0];
 				break;
-				
+			
 			}
 		getWifiInfo();
 		
